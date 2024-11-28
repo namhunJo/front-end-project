@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Front-end 과제</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h2 {
+      margin-bottom: 20px;
+    }
+    .top-controls {
+      display: flex;
+      justify-content: space-between;
+      width: 90%;
+      margin-bottom: 10px;
+    }
+    select, input {
+      width: 100%;
+      border: none;
+      text-align: center;
+      background: transparent;
+      font-size: 16px;
+    }
+    select:focus, input:focus {
+      outline: none;
+      border-bottom: 1px solid blue;
+    }
+    .buttons {
+      display: flex;
+      gap: 10px;
+    }
+    button {
+      padding: 7px 12px;
+      border: 1px solid navy;
+      border-radius: 4px;
+      background-color: gray;
+      font-size: 19px;
+      font-weight: bold;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #e0e0e0;
+    }
+    table {
+      margin: 0 auto;
+      border-collapse: collapse;
+      width: 90%;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: skyblue;
+      color: white;
+    }
+    .year-dropdown select {
+        border: 2px solid #000; /* 테두리 색상 */
+        
+        padding: 5px;          /* 내부 여백 */
+       background-color: #f9f9f9; /* 배경색 */
+    }
+    
+    .total-row {
+      background-color: #ffeeee;
+    }
+    .grade {
+      text-align: center;
+    }
+    tr.selected {
+      background-color: #ffcccc;
+    }
+    /* 과목명 좌측 정렬 */
+    td.subject {
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Front-end 과제</h2>
+    <div class="top-controls">
+      <div class="year-dropdown">
+        <select id="year">
+          <option value="1">1학년</option>
+          <option value="2">2학년</option>
+          <option value="3">3학년</option>
+        </select>
+      </div>
+      <div class="buttons">
+        <button id="add">추가</button>
+        <button id="delete">삭제</button>
+        <button id="save">저장</button>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>선택</th>
+          <th>이수</th>
+          <th>필수</th>
+          <th>과목명</th>
+          <th>학점</th>
+          <th>출석점수</th>
+          <th>과제점수</th>
+          <th>중간고사</th>
+          <th>기말고사</th>
+          <th>총점</th>
+          <th>평균</th>
+          <th>성적</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- 초기에는 과목 행 없음 !-->
+      </tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td colspan="4">합계</td>
+          <td class="credits"></td>
+          <td class="attendance"></td>
+          <td class="assignment"></td>
+          <td class="midterm"></td>
+          <td class="final"></td>
+          <td class="total"></td>
+          <td class="average"></td>
+          <td></td> <!-- 성적 표시 -->
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  <script>
+    // 학년별 데이터 저장
+    const gradeData = { 1: [], 2: [], 3: [] };
+    let currentYear = '1';
+    // 추가 및 삭제 기록을 위한 배열
+    let addedSubjects = [];
+    let removedSubjects = []
+
+    // 학년 변경
+    document.getElementById('year').addEventListener('change', (e) => {
+      saveCurrentYearData();
+      currentYear = e.target.value;
+      loadYearData();
+    });
+
+    // 데이터 저장
+    function saveCurrentYearData() {
+      const rows = document.querySelectorAll('tbody tr');
+      const data = [];
+      rows.forEach(row => {
+        const rowData = {
+          이수: row.cells[1].querySelector('select').value,
+          필수: row.cells[2].querySelector('select').value,
+          과목명: row.cells[3].textContent.trim(),
+          학점: row.cells[4].textContent.trim(),
+          출석점수: row.cells[5].textContent.trim(),
+          과제점수: row.cells[6].textContent.trim(),
+          중간고사: row.cells[7].textContent.trim(),
+          기말고사: row.cells[8].textContent.trim(),
+          총점: row.cells[9].textContent.trim(),
+          성적: row.cells[11].textContent.trim(),
+        };
+        data.push(rowData);
+      });
+      gradeData[currentYear] = data;
+      localStorage.setItem('gradeData', JSON.stringify(gradeData));
+    }
+
+    // 데이터 로드
+    function loadYearData() {
+      const tbody = document.querySelector('tbody');
+      tbody.innerHTML = '';
+      const data = gradeData[currentYear] || [];
+      data.forEach(item => {
+        const newRow = document.createElement('tr');
+        newRow.innerHTML = `
+          <td><input type="checkbox"></td>
+          <td>
+            <select>
+              <option ${item.이수 === '교양' ? 'selected' : ''}>교양</option>
+              <option ${item.이수 === '전공' ? 'selected' : ''}>전공</option>
+            </select>
+          </td>
+          <td>
+            <select>
+              <option ${item.필수 === '필수' ? 'selected' : ''}>필수</option>
+              <option ${item.필수 === '선택' ? 'selected' : ''}>선택</option>
+            </select>
+          </td>
+          <td class="subject" contenteditable="true">${item.과목명}</td>
+          <td contenteditable="true">${item.학점}</td>
+          <td contenteditable="true">${item.출석점수}</td>
+          <td contenteditable="true">${item.과제점수}</td>
+          <td contenteditable="true">${item.중간고사}</td>
+          <td contenteditable="true">${item.기말고사}</td>
+          <td>${item.총점}</td>
+          <td></td>
+          <td>${item.성적}</td>
+        `;
+        tbody.appendChild(newRow);
+        addRealTimeCalculation(newRow);
+      });
+      calculateSummary();
+    }
+
+    // 실시간 총점 및 성적 계산
+    function addRealTimeCalculation(row) {
+      for (let i = 5; i <= 8; i++) {
+        row.cells[i].addEventListener('blur', () => {
+          calculateTotal(row);
+          calculateGrade(row);
+        });
+      }
+    }
+
+    // 총점 계산
+    function calculateTotal(row) {
+      const attendance = parseInt(row.cells[5].textContent) || 0;
+      const assignment = parseInt(row.cells[6].textContent) || 0;
+      const midterm = parseInt(row.cells[7].textContent) || 0;
+      const finalExam = parseInt(row.cells[8].textContent) || 0;
+      const total = attendance + assignment + midterm + finalExam;
+      row.cells[9].textContent = total;
+      return total;
+    }
+
+    // 성적 계산
+    function calculateGrade(row) {
+      const credit = parseInt(row.cells[4].textContent) || 0;
+      const total = parseInt(row.cells[9].textContent) || 0;
+      let grade = '';
+      if (credit === 1) {
+        grade = total >= 60 ? 'P' : 'NP';
+      } else {
+        if (total >= 95) grade = 'A+';
+        else if (total >= 90) grade = 'A0';
+        else if (total >= 85) grade = 'B+';
+        else if (total >= 80) grade = 'B0';
+        else if (total >= 75) grade = 'C+';
+        else if (total >= 70) grade = 'C0';
+        else if (total >= 65) grade = 'D+';
+        else if (total >= 60) grade = 'D0';
+        else grade = 'F';
+      }
+      row.cells[11].textContent = grade;
+      row.cells[11].style.color = grade === 'F' ? 'red' : 'black';
+    }
+
+    // 합계 및 평균 계산
+    function calculateSummary() {
+  const rows = document.querySelectorAll('tbody tr');
+  let totalCredits = 0, totalAttendance = 0, totalAssignment = 0;
+  let totalMidterm = 0, totalFinal = 0, totalScores = 0, validSubjects = 0;
+
+  // 각 과목의 데이터를 합산
+  rows.forEach(row => {
+    const credit = parseInt(row.cells[4].textContent) || 0;
+    const attendance = parseInt(row.cells[5].textContent) || 0;
+    const assignment = parseInt(row.cells[6].textContent) || 0;
+    const midterm = parseInt(row.cells[7].textContent) || 0;
+    const finalExam = parseInt(row.cells[8].textContent) || 0;
+    const total = parseInt(row.cells[9].textContent) || 0;
+    const grade = row.cells[11].textContent;
+
+    // Pass/NonPass 과목은 제외
+    if (grade === 'P') {
+      // 성적이 'P'인 경우 학점만 합계에 반영
+      totalCredits += credit;
+    } else if (grade !== 'NP') {
+      // 성적이 'NP'가 아닌 일반 과목인 경우 모든 항목 반영
+      totalCredits += credit;
+      totalAttendance += attendance;
+      totalAssignment += assignment;
+      totalMidterm += midterm;
+      totalFinal += finalExam;
+      totalScores += total;
+      validSubjects++; // 유효 과목 수 증가
+    }
+  });
+
+  // 합계탭 업데이트
+  document.querySelector('.credits').textContent = totalCredits || '';
+  document.querySelector('.attendance').textContent = totalAttendance || '';
+  document.querySelector('.assignment').textContent = totalAssignment || '';
+  document.querySelector('.midterm').textContent = totalMidterm || '';
+  document.querySelector('.final').textContent = totalFinal || '';
+  document.querySelector('.total').textContent = totalScores || '';
+
+  // 평균 계산
+  const average = validSubjects ? (totalScores / validSubjects).toFixed(2) : '';
+  document.querySelector('.average').textContent = average;
+
+  // 평균에 따른 성적 계산
+  const gradeCell = document.querySelector('.total-row td:last-child'); // 성적 셀
+  let overallGrade = '';
+
+  if (average) {
+    const avg = parseFloat(average); // 평균값을 숫자로 변환
+    if (avg >= 95) overallGrade = 'A+';
+    else if (avg >= 90) overallGrade = 'A0';
+    else if (avg >= 85) overallGrade = 'B+';
+    else if (avg >= 80) overallGrade = 'B0';
+    else if (avg >= 75) overallGrade = 'C+';
+    else if (avg >= 70) overallGrade = 'C0';
+    else if (avg >= 65) overallGrade = 'D+';
+    else if (avg >= 60) overallGrade = 'D0';
+    else overallGrade = 'F';
+  }
+
+  gradeCell.textContent = overallGrade; // 합계탭의 성적 표시
+  gradeCell.style.color = overallGrade === 'F' ? 'red' : 'black'; // F일 경우 빨간색
+}
+    // 추가 버튼
+    document.getElementById('add').addEventListener('click', () => {
+  const tbody = document.querySelector('tbody');
+  const newRow = document.createElement('tr');
+  newRow.innerHTML = `
+    <td><input type="checkbox"></td>
+    <td><select><option>교양</option><option>전공</option></select></td>
+    <td><select><option>필수</option><option>선택</option></select></td>
+    <td class="subject" contenteditable="true">새 과목</td>
+    <td contenteditable="true">1</td>
+    <td contenteditable="true">0</td>
+    <td contenteditable="true">0</td>
+    <td contenteditable="true">0</td>
+    <td contenteditable="true">0</td>
+    <td>0</td>
+    <td></td>
+    <td></td>
+  `;
+  newRow.style.backgroundColor = 'lightgreen'; // 추가된 행의 배경색 설정
+  tbody.appendChild(newRow);
+
+  // 추가된 과목 기록
+  addedSubjects.push({ name: '새 과목', total: 0 });
+
+  addRealTimeCalculation(newRow);
+});
+
+    // 삭제 버튼
+    
+    document.getElementById('delete').addEventListener('click', () => {
+    const rows = document.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+    const checkbox = row.querySelector('input[type="checkbox"]');
+    if (checkbox && checkbox.checked) {
+      const subjectName = row.cells[3].textContent.trim();
+      const totalScore = row.cells[9].textContent.trim();
+
+      // 삭제된 과목 기록
+      removedSubjects.push({ name: subjectName, total: totalScore });
+
+      row.remove();
+    }
+  });
+
+  // 삭제 후 바로 합계 계산은 하지 않음
+});
+
+    // 저장 버튼
+    document.getElementById('save').addEventListener('click', () => {
+  const rows = document.querySelectorAll('tbody tr');
+  const allSubjects = new Map(); // 모든 학년의 과목명을 키로 사용하는 Map
+  const currentYearSubjects = new Map(); // 현재 학년의 과목명을 키로 사용하는 Map
+  const newAddedSubjects = []; // 이번에 새로 추가된 과목만 기록
+  const newRemovedSubjects = []; // 이번에 삭제된 과목만 기록
+  let isDuplicateError = false;
+  let isScoreError = false; // 점수 범위 초과 에러 변수 추가
+
+  // 모든 학년의 데이터를 Map에 저장
+  Object.entries(gradeData).forEach(([year, data]) => {
+    data.forEach(item => {
+      if (!allSubjects.has(item.과목명)) {
+        allSubjects.set(item.과목명, { grade: item.성적, year });
+      }
+    });
+  });
+
+  // 현재 학년 데이터 검토 및 중복 확인
+  rows.forEach(row => {
+    const subjectName = row.cells[3].textContent.trim(); // 과목명
+    const grade = row.cells[11].textContent.trim(); // 성적
+
+    if (currentYearSubjects.has(subjectName)) {
+      const existingRow = currentYearSubjects.get(subjectName);
+      const existingGrade = existingRow.cells[11].textContent.trim();
+
+      if (existingGrade === 'F' && grade !== 'F') {
+        newRemovedSubjects.push({ name: subjectName, total: existingRow.cells[9].textContent });
+        currentYearSubjects.set(subjectName, row); // 기존 행 대체
+      } else if (grade === 'F' && existingGrade !== 'F') {
+        newRemovedSubjects.push({ name: subjectName, total: row.cells[9].textContent });
+      } else {
+        alert(`현재 학년에서 중복된 과목명: ${subjectName}`);
+        isDuplicateError = true;
+      }
+    } else {
+      currentYearSubjects.set(subjectName, row);
+    }
+
+    // 다른 학년 데이터와 중복 확인
+    if (allSubjects.has(subjectName) && allSubjects.get(subjectName).year !== currentYear) {
+      alert(`다른 학년에서 중복된 과목명: ${subjectName}`);
+      isDuplicateError = true;
+    }
+
+    // 새로 추가된 항목 추적
+    if (!addedSubjects.some(item => item.name === subjectName)) {
+      newAddedSubjects.push({ name: subjectName, total: row.cells[9].textContent });
+    }
+  });
+
+  // 중복 에러 발생 시 저장 중단
+  if (isDuplicateError) {
+    return;
+  }
+
+  // 점수 범위 확인 및 총점 계산
+  rows.forEach(row => {
+    const attendance = parseInt(row.cells[5].textContent) || 0;
+    const assignment = parseInt(row.cells[6].textContent) || 0;
+    const midterm = parseInt(row.cells[7].textContent) || 0;
+    const finalExam = parseInt(row.cells[8].textContent) || 0;
+    const total = attendance + assignment + midterm + finalExam;
+
+    // 점수 범위 확인
+    if (
+      attendance < 0 || attendance > 20 ||
+      assignment < 0 || assignment > 20 ||
+      midterm < 0 || midterm > 30 ||
+      finalExam < 0 || finalExam > 30 ||
+      total < 0 || total > 100
+    ) {
+      alert('점수가 범위를 초과하였습니다. 올바른 값을 입력하세요.');
+      isScoreError = true;
+    }
+
+    // 총점 업데이트
+    row.cells[9].textContent = total;
+    calculateGrade(row); // 성적 계산 함수 호출
+  });
+
+  // 점수 범위 초과 에러 발생 시 저장 중단
+  if (isScoreError) {
+    return;
+  }
+
+  // 데이터 저장 및 추가된 과목/삭제된 과목 알림
+  saveCurrentYearData();
+  calculateSummary();
+
+  // 추가 및 삭제된 항목 알림
+  const addedInfo = newAddedSubjects
+    .map(item => `추가된 과목: ${item.name}, 총점: ${item.total}`)
+    .join('\n');
+
+  const removedInfo = newRemovedSubjects
+    .map(item => `삭제된 과목: ${item.name}, 총점: ${item.total}`)
+    .join('\n');
+
+  const alertMessage = [
+    addedInfo ? addedInfo : '추가된 과목 없음',
+    removedInfo ? removedInfo : '삭제된 과목 없음',
+  ].join('\n\n');
+
+  alert(alertMessage);
+
+  // `addedSubjects` 업데이트
+  addedSubjects = rows.map(row => ({
+    name: row.cells[3].textContent.trim(),
+    total: parseInt(row.cells[9].textContent) || 0,
+  }));
+
+  // `newAddedSubjects` 및 `newRemovedSubjects` 초기화
+  console.log('현재 추가된 과목:', newAddedSubjects); // 디버깅용
+  console.log('현재 삭제된 과목:', newRemovedSubjects); // 디버깅용
+  newAddedSubjects.length = 0;
+  newRemovedSubjects.length = 0;
+
+  alert('저장되었습니다!');
+});
+
+// 초기 데이터 로드
+window.addEventListener('load', () => {
+  const savedData = localStorage.getItem('gradeData');
+  if (savedData) {
+    Object.assign(gradeData, JSON.parse(savedData));
+  }
+  loadYearData();
+});
+</script>
+</body>
+</html>
